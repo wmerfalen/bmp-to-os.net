@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstring>
+#include <array>
 
 int width = 0;
 int height = 0;
@@ -39,14 +41,6 @@ std::vector<unsigned int> ReadBMP(const std::string & filename)
             data.push_back((unsigned int)single_row[j] + \
                     (unsigned int)single_row[j+1] + \
                     (unsigned int)single_row[j+2]);
-/*
- * The color of pixel (i, j) is stored at: 
- * data[j * width + i], 
- * data[j * width + i + 1] 
- * data[j * width + i + 2]
-*/
-            std::cout << "R: "<< (int)single_row[j] << " G: " << (int)single_row[j+1];
-            std::cout << " B: " << (int)single_row[j+2]<< "\n";
         }
     }
     fclose(f);
@@ -58,32 +52,33 @@ int usage(char ** argv){
     return 1;
 }
 
-/*
 struct note {
-    unsigned char** scale;
-    unsigned char* start;
-    unsigned short octave;
-    unsigned char* current;
-    note() : octave(7),start("G#"),scale({"B","A#","A","G#","G","F#","F","E","D#","D","C#","C"}){
-        current = indexof(start);
+    std::array<const char*,12> scale;
+    const char* start;
+    short octave;
+    const char* current;
+    note() : octave(7),start("G#"){
+        scale = {"B","A#","A","G#","G","F#","F","E","D#","D","C#","C"};
+        current = scale[indexof(start)];
     }
-    unsigned int indexof(unsigned char* c){
+    unsigned int indexof(const char* c){
         for(unsigned i=0;i < sizeof(scale);i++){
             if(strcmp(scale[i],c) == 0){
                 return i;
             }
         }
-        return (unsigned int)"lolwtf";
+        throw "wtf";
     }
-    operator++(){
-        if(strcmp(scale[current],"C") ==0){
-            current = 0;
+    note& operator++(int){
+        if(strcmp(current,"C") ==0){
+            current = scale[0];
+            --octave;
         }else{
-            ++current;
+            current = scale[indexof(current)+1];
         }
+        return *this;
     }
 };
-*/
 
 int main(int argc,char** argv){
     if(argc != 5){
@@ -93,6 +88,15 @@ int main(int argc,char** argv){
     int threshold = atoi(argv[2]);
     int lower_threshold = atoi(argv[3]);
     bool flip = atoi(argv[4]) == 1 ? true : false;
+    std::cout << "$.post('/app/api/save.php',{";
+    std::cout << "title:'Untitled',basedon:0,data:'{\"instruments\":{\"0\":{\"volume\":1,\"delay\":false,\"reverb\":false}}}|110|";//0 A5 1 0;1 G#5 1 0;6 F5 1 0;;
+    /**
+     * Format of note data is:
+     * X NF 1 0 
+     * Where X is the x coordinate on the sequencer,
+     * and N is the note, and F is the octave
+     */
+    note current_note;
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width;x++){
             /* We want 0,0 */
@@ -101,14 +105,16 @@ int main(int argc,char** argv){
                 pixel = data[x * height + y];
             }
             if(pixel < threshold && pixel > lower_threshold){
-                std::cout << "*";
-            }else if(pixel < threshold && pixel < lower_threshold && pixel > lower_threshold/2){
-                std::cout << ".";
+                std::cout << x << " " << current_note.current << current_note.octave << " 1 0;";
+                std::cerr << "*";
             }else{
-                std::cout << " ";
+                std::cerr << " ";
+                continue;
             }
         }
-        std::cout << "\n";
+        current_note++;
+        std::cerr << "\n";
     }
+    std::cout << "'}).done(function(msg){location.href=msg.split('>')[1].split('<')[0];});";
     return 0;
 }

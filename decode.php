@@ -1,0 +1,3 @@
+<?php
+echo urldecode('title=Untitled&basedon=0&data=%7B%22instruments%22%3A%7B%220%22%3A%7B%22volume%22%3A1%2C%22delay%22%3Afalse%2C%22reverb%22%3Afalse%7D%7D%7D%7C110%7C0%20A5%201%200%3B1%20G%235%201%200%3B6%20F5%201%200%3B19%20D5%201%200%3B30%20C%235%201%200%3B44%20F4%201%200%3B54%20D4%201%200%3B') . PHP_EOL;
+
